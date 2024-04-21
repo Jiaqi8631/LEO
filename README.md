@@ -25,7 +25,12 @@ Download libraries ([CUDA toolkit 11.3](https://developer.download.nvidia.com/co
 [NVSHMEM 2.0.3-0](https://developer.download.nvidia.com/compute/redist/nvshmem/2.0.3/source/nvshmem_src_2.0.3-0.txz), [Open MPI 4.1.1](https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.1.tar.gz))
 ### 1.3 Prepare graph preprocessing tools.
 Download and compile the softwares ([Rabbit Order](https://github.com/araij/rabbit_order.git), [Gorder](https://github.com/datourat/Gorder.git))
-### 1.4 Compile implementation.
+### 1.4 Try it with Docker.
+If you run any issue during the install, or if you would like to use LEO without needing to install from source, you can build a Docker container based on the provided Dockfile. To run our Docker container:
+```
+sudo docker run -it --rm --gpus all    --net=host  --privileged=true  --cap-add=SYS_ADMIN   -v $PWD/../:/LEO     sjq/leo:with_nudt /bin/bash
+```
+### 1.5 Compile implementation.
 ```
 mkdir build && cd build && cmake .. && cd ..
 ./0_leo_build.sh
