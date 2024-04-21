@@ -26,7 +26,7 @@ Download libraries ([CUDA toolkit 11.3](https://developer.download.nvidia.com/co
 ### 1.3 Prepare graph preprocessing tools.
 Download and compile the softwares ([Rabbit Order](https://github.com/araij/rabbit_order.git), [Gorder](https://github.com/datourat/Gorder.git))
 ### 1.4 Try it with Docker.
-If you run any issue during the install, or if you would like to use LEO without needing to install from source, you can build a Docker container based on the provided Dockfile. To run our Docker container:
+If you run into any issue during the installation, or if you would like to use LEO without needing to install from the source, you can build a Docker container based on the provided Dockfile. To run our Docker container:
 ```
 sudo docker run -it --rm --gpus all    --net=host  --privileged=true  --cap-add=SYS_ADMIN   -v $PWD/../:/LEO     sjq/leo:with_nudt /bin/bash
 ```
