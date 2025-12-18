@@ -1,0 +1,85 @@
+import os
+import numpy as np
+import pandas as pd
+from scipy.sparse import coo_matrix, csr_matrix
+import json, torch
+
+DOWNLOAD_URL = 'http://snap.stanford.edu/ogb/data/nodeproppred/proteins.zip'
+
+CURRENT_WORK_DIR = os.getcwd()
+RAW_DATA_DIR = '../datasets/data-raw'
+PROTEINS_RAW_DATA_DIR = f'{RAW_DATA_DIR}/proteins'
+OUTPUT_DATA_DIR = '../datasets/data-output'
+PROTEINS_OUTPUT_DATA_DIR = f'{OUTPUT_DATA_DIR}/proteins'
+
+def download_data():
+    print('Download data...')
+    if not os.path.exists(f'{RAW_DATA_DIR}/proteins.zip'):
+        print('Start downloading...')
+        assert(os.system(f'wget {DOWNLOAD_URL} -O {RAW_DATA_DIR}/proteins.zip') == 0)
+    else:
+        print('Already downloaded.')
+
+    print('Unzip data...')
+    if not os.path.exists(f'{PROTEINS_RAW_DATA_DIR}/unzipped'):
+        assert(os.system(f'cd {RAW_DATA_DIR}; unzip proteins.zip') == 0)
+        assert(os.system(f'touch {PROTEINS_RAW_DATA_DIR}/unzipped') == 0)
+    else:
+        print('Already unzipped...') 
+
+def gen_topo_wholegraph():
+    assert(os.system(f'cd {CURRENT_WORK_DIR}') == 0)
+    print('Reading raw graph topo...')
+    edges = pd.read_csv(f'{PROTEINS_RAW_DATA_DIR}/raw/edge.csv.gz', compression='gzip', header=None).values.T
+    num_nodes = pd.read_csv(f'{PROTEINS_RAW_DATA_DIR}/raw/num-node-list.csv.gz', compression='gzip', header=None).values[0][0]
+
+    src = edges[0]
+    dst = edges[1]
+    data = np.ones(src.shape)
+    A = coo_matrix((data, (dst, src)), shape=(num_nodes, num_nodes), dtype=np.uint32)
+    csr = A.tocsr()
+    
+    print('Generating CSR...')
+    indptr = csr.indptr
+    indices = csr.indices
+
+    num_nodes = indptr.shape[0] - 1
+    num_edges = indices.shape[0]
+
+    A_T = A.transpose().tocsr()
+    indptr_T = A_T.indptr
+    indices_T = A_T.indices
+    del src, dst, edges, A
+
+    print('Writing CSR...')
+    indptr.astype('uint32').tofile(f'{PROTEINS_OUTPUT_DATA_DIR}/indptr.bin')
+    indices.astype('uint32').tofile(f'{PROTEINS_OUTPUT_DATA_DIR}/indices.bin')
+    indptr_T.astype('uint32').tofile(f'{PROTEINS_OUTPUT_DATA_DIR}/indptr_T.bin')
+    indices_T.astype('uint32').tofile(f'{PROTEINS_OUTPUT_DATA_DIR}/indices_T.bin')
+
+
+def gen_spilt_feat_label_wholegraph():
+    assert(os.system(f'cd {CURRENT_WORK_DIR}') == 0)
+    print('Reading spilt raw data and labels...')
+
+    train_idx = pd.read_csv(f'{PROTEINS_RAW_DATA_DIR}/split/species/train.csv.gz', compression='gzip', header=None).values.T[0]
+    valid_idx = pd.read_csv(f'{PROTEINS_RAW_DATA_DIR}/split/species/valid.csv.gz', compression='gzip', header=None).values.T[0]
+    test_idx  = pd.read_csv(f'{PROTEINS_RAW_DATA_DIR}/split/species/test.csv.gz',  compression='gzip', header=None).values.T[0]
+
+    label = pd.read_csv(f'{PROTEINS_RAW_DATA_DIR}/raw/node-label.csv.gz', compression='gzip', header=None).values.T[0]
+
+    print('Writing spilt raw data and labels...')
+
+    train_idx.astype('uint32').tofile(f'{PROTEINS_OUTPUT_DATA_DIR}/train_set.bin')
+    valid_idx.astype('uint32').tofile(f'{PROTEINS_OUTPUT_DATA_DIR}/valid_set.bin')
+    test_idx.astype('uint32').tofile(f'{PROTEINS_OUTPUT_DATA_DIR}/test_set.bin')
+
+    label.astype('uint32').tofile(f'{PROTEINS_OUTPUT_DATA_DIR}/label.bin')
+
+if __name__ == '__main__':
+    assert(os.system(f'mkdir -p {PROTEINS_RAW_DATA_DIR}') == 0)
+    assert(os.system(f'mkdir -p {PROTEINS_OUTPUT_DATA_DIR}') == 0)
+
+    download_data()
+    gen_topo_wholegraph() 
+    gen_spilt_feat_label_wholegraph()
